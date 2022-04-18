@@ -11,3 +11,6 @@ Touchbox is a connection & musical interface that invites a person with dementia
 
 # How it works
 The LDRs are placed on top of the Touchbox. In order to start a song, they should be covered by the PwD and the informal carer. When the LDRs are covered, signals are sent using the MQTT protocol to the p5.js sketch and a song is played.
+
+#p5.js code
+[Can be accessed here](https://editor.p5js.org/simoparaschi/sketches/JRa9bdV6x).
