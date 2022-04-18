@@ -1,0 +1,162 @@
+// 2021 PinkTomate - Beach, Bente, Oba & Simo
+//Touchbox
+// https://editor.p5js.org/simoparaschi/sketches/rVUKaCxMi
+
+
+
+//Spotify set-up
+var accessToken;
+var data;
+var val = 0;
+var api = 'https://api.spotify.com/v1/search?q='; // did this to help search by artist
+var units = '&type=track';
+var input;
+
+// credentials to connect to MQTT broker
+let settings = 
+{
+  broker: 'connectr.cloud.shiftr.io',
+  username: 'connectr',
+  token: '6ouWxIIVDIJMrmdq'
+}
+
+
+// topics that this sketch subscribes to
+let subs = 
+[
+  'PinkTomate/#',  // # means subscribe to all subtopics
+]
+
+let value = 0
+let topic_out = "TouchBox"
+let img;
+
+// initialize the mqtt websocket connection
+// see: https://www.eclipse.org/paho/index.php?page=clients/js/index.php
+client = new Paho.MQTT.Client(
+  settings.broker,
+  Number(443),
+  "p5js-sketch"
+)
+
+// callbacks for events
+client.onConnectionLost = onConnectionLost
+
+function setup() 
+{
+  createCanvas(0, 0).parent("#canvas-holder");
+  // createCanvas(windowWidth, windowHeight)
+  client.connect({
+    onSuccess: onConnect,
+    userName: settings.username,
+    password: settings.token,
+    useSSL: true,
+  })
+  // Right when we set up the canvas, we fire off a request to get an access token
+  getAccessToken(function(incoming) {
+    // When it comes back (as the variable 'incoming'), we save it to our variable 'accessToken'.
+    accessToken = incoming;
+  });
+
+  // changed by Ats
+  var button = select('#submit');
+  //button.position(30, 40);
+  button.mousePressed(searchArtist);
+  input = select('#artist');
+}
+
+
+function searchArtist() {
+
+  var url = api + input.value() + units;
+  getAPIData(accessToken, url, function(searchResults) { // function is callback
+
+  
+    //results holder
+    
+    let trackCount = searchResults.tracks.items.length;
+    trackCount = max(10,trackCount);
+    for (let i=0;i<trackCount;i++) {
+      
+      var urlToSend = "https://open.spotify.com/track/"+searchResults.tracks.items[i].id;
+      
+      //song duration 
+      var songLength = searchResults.tracks.items[i].duration_ms;
+      let data = new Object();//{ url: urlToSend, duration: songLength };
+      data.url = urlToSend;
+      let thispayload = urlToSend+" "+songLength;// unescape(JSON.stringify(data));
+      
+      let buttonCode='<button class = "btnchoose" id = "selectButton'+(i+1)+'" type="submit" onclick="mqttSendMessage(\''+thispayload+'\');">send song</button>';
+      
+      //console.log(i);
+      select("#results-holder"+(i+1)).html('<iframe class="result" src="https://open.spotify.com/embed/track/' + searchResults.tracks.items[i].id + '" ></iframe>'+buttonCode);
+      
+    }
+    
+  });
+}
+
+
+function draw() 
+{
+  if (data) 
+  {
+    text(JSON.stringify(data), 10, 10);
+  }
+}
+
+
+function onConnect() 
+{
+  console.log("connected to shiftr")
+  subs.forEach((element) => {
+    console.log("subscribing to topic [" + element + "]")
+    client.subscribe(element)
+  })
+}
+
+function onConnectionLost(responseObject) 
+{
+  if (responseObject.errorCode !== 0) {
+    console.log("lost connection to shiftr:" + responseObject.errorMessage)
+  }
+}
+
+function mqttSendMessage(payload) 
+{
+  console.log("sending: " + payload)
+  let message = new Paho.MQTT.Message( payload.toString() )
+  message.destinationName = topic_out
+  client.send(message)
+}
+
+
+// OAuth:
+function getAPIData(accessToken, url, callback) {
+  if (!accessToken) {
+    throw "Can't do an API call without an access token!";
+  }
+  var request = new XMLHttpRequest();
+  request.open("GET", url, true);
+  request.setRequestHeader("Authorization", "Bearer " + accessToken);
+  request.addEventListener("load", function() {
+    callback(JSON.parse(this.responseText));
+  });
+  request.send();
+}
+
+// Access token is a temporary password we get, using our permanent password
+function getAccessToken(callback) {
+  var url = "https://accounts.spotify.com/api/token";
+  // XMLHttpRequest is a way of doing a very customizable API call
+  // You almost never need it
+  var request = new XMLHttpRequest();
+  request.open("POST", url, true);
+  // The line below has our permanent password
+  request.setRequestHeader("Authorization", "Basic OTliYWE2Y2Q0Y2M3NDAyNjk4ZGFiZmU3OGExZjIxZGI6YmMxMjNkYmI4Zjc3NGI4ZGE5ZjY3ODFkZDA5YzYyYmU=");
+  request.setRequestHeader("content-type", "application/x-www-form-urlencoded");
+  request.addEventListener("load", function() {
+    callback(JSON.parse(this.responseText).access_token);
+  });
+  request.send("grant_type=client_credentials");
+}
