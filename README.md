@@ -5,6 +5,8 @@ Project by PinkTomate - Beach Bagenal, Bente Vonk, Obafemi Omitiran & Simo Paras
 
 Touchbox is a connection & musical interface that invites a person with dementia (PwD) and their informal carer to sit together and generate music through physical contact. It is the result of a participatory design approach, where we discovered the relational challenge that dementia poses between the PwD and the informal carer.
 
+Readu case study here: https://www.simoparaschi.io/case-study/designing-for-people-with-dementia
+
 # Tools required:
 - 2 light-dependent resistor(LDRs)
 - ESP 8266 | I used Adafruit's Feather HUZZAH ESP8266
